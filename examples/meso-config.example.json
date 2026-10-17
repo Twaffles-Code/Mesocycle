@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "Meso 1 - Example",
+  "units": "lb",
+  "trainingWeeks": 4,
+  "days": [
+    {
+      "name": "Upper",
+      "exercises": [
+        {
+          "name": "Bench Press",
+          "sets": 3,
+          "reps": "8-12",
+          "rir": "1-2",
+          "weight": 135
+        },
+        {
+          "name": "DB Row",
+          "sets": 3,
+          "reps": "8-12",
+          "rir": "1-2"
+        }
+      ]
+    },
+    {
+      "name": "Lower",
+      "exercises": [
+        {
+          "name": "Squat",
+          "sets": 3,
+          "reps": "8-12",
+          "rir": "2",
+          "weight": 185
+        }
+      ]
+    }
+  ]
+}
