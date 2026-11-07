@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { addDay, applyDayPlan, loggedSetsLost, removeDay, type EditScope } from '../domain/editing'
+import { addDay, applyDayPlan, loggedSetsLost, removeDay, renamesNeedingAnswer, type EditScope, type Rename } from '../domain/editing'
 import { planFromDay, weekLabel } from '../domain/meso'
 import type { DayPlan } from '../domain/types'
 import { dayPlanProblems } from '../domain/validation'
@@ -19,6 +19,9 @@ export function DayEditScreen({ mode }: { mode: 'edit' | 'new' }) {
   // Most edits (swapping an exercise, changing a target) should carry forward. The deload is usually its own thing.
   const [scope, setScope] = useState<EditScope>(week?.isDeload ? 'this' : 'remaining')
   const [problems, setProblems] = useState<string[]>([])
+  // Renamed exercises that already have logged sets: asked once, before saving, whether each is the same exercise.
+  const [renames, setRenames] = useState<Rename[]>([])
+  const [answers, setAnswers] = useState<Record<string, 'same' | 'different'>>({})
 
   if (!meso || !week || !plan || (mode === 'edit' && !day)) return <NotFound what="day" />
   const isLastWeek = weekIndex === meso.weeks.length - 1
@@ -36,9 +39,22 @@ export function DayEditScreen({ mode }: { mode: 'edit' | 'new' }) {
       return
     }
     if (!day) return
-    const lost = loggedSetsLost(meso, week.id, day.id, plan, scope)
+
+    const pending = renamesNeedingAnswer(day, plan)
+    const unanswered = pending.filter((r) => answers[r.id] === undefined)
+    if (unanswered.length > 0) {
+      setRenames(pending)
+      setAnswers((a) => Object.fromEntries(pending.map((r) => [r.id, a[r.id] ?? 'same'])) as Record<string, 'same' | 'different'>)
+      return
+    }
+    const resolved: DayPlan = {
+      ...plan,
+      exercises: plan.exercises.map((e) => (e.id && pending.some((r) => r.id === e.id) && answers[e.id] === 'different' ? { ...e, startFresh: true } : e)),
+    }
+
+    const lost = loggedSetsLost(meso, week.id, day.id, resolved, scope)
     if (lost > 0 && !window.confirm(`This removes ${lost} logged set${lost === 1 ? '' : 's'}. Save anyway?`)) return
-    store.update(meso.id, (m) => applyDayPlan(m, week.id, day.id, plan, scope))
+    store.update(meso.id, (m) => applyDayPlan(m, week.id, day.id, resolved, scope))
     navigate(back, { replace: true })
   }
 
@@ -57,7 +73,7 @@ export function DayEditScreen({ mode }: { mode: 'edit' | 'new' }) {
       back={back}
       footer={
         <button className="btn btn-primary btn-block btn-large" onClick={save}>
-          {mode === 'new' ? 'Add day' : 'Save changes'}
+          {mode === 'new' ? 'Add day' : renames.length > 0 ? 'Confirm and save' : 'Save changes'}
         </button>
       }
     >
@@ -80,6 +96,34 @@ export function DayEditScreen({ mode }: { mode: 'edit' | 'new' }) {
               ? 'Later weeks find each exercise by name, so a renamed or swapped exercise starts fresh there (future weeks usually have nothing logged yet). Earlier weeks never change.'
               : 'Only this week changes. Later weeks keep their current plan.'}
           </p>
+        </section>
+      )}
+
+      {renames.length > 0 && (
+        <section className="card">
+          <p>
+            <strong>Is this the same exercise?</strong>
+          </p>
+          <p className="muted small">
+            These have logged sets in {weekLabel(meso, weekIndex)}. Keep them if it&rsquo;s a rename or typo fix. Start fresh if you&rsquo;ve swapped in a different exercise, so its history
+            isn&rsquo;t mixed with the old one&rsquo;s.
+          </p>
+          {renames.map((r) => (
+            <div className="field" key={r.id}>
+              <span>
+                {r.from} → {r.to} ({r.loggedSets} logged)
+              </span>
+              <Segmented
+                label={`${r.from} renamed to ${r.to}`}
+                value={answers[r.id] ?? 'same'}
+                options={[
+                  { value: 'same', label: 'Same (keep sets)' },
+                  { value: 'different', label: 'Different (start fresh)' },
+                ]}
+                onChange={(v) => setAnswers((a) => ({ ...a, [r.id]: v }))}
+              />
+            </div>
+          ))}
         </section>
       )}
 

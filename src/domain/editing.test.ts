@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDay, applyDayPlan, loggedSetsLost, removeDay } from './editing'
+import { addDay, applyDayPlan, loggedSetsLost, removeDay, renamesNeedingAnswer } from './editing'
 import { logSet } from './logging'
 import { createMeso, planFromDay } from './meso'
 import { plan } from './testFixtures'
@@ -53,6 +53,29 @@ describe('applyDayPlan', () => {
     p.exercises[0]!.sets[0]!.targetReps = '6-8'
     const set = upper(applyDayPlan(meso, meso.weeks[0]!.id, upper(meso, 0).id, p, 'this'), 0).exercises[0]!.sets[0]!
     expect(set).toMatchObject({ weight: 75, reps: 11, status: 'done', targetReps: '6-8' })
+  })
+
+  it('clears logged sets when the rename is marked as a different exercise', () => {
+    const meso = logFirstBenchSet(createMeso(plan))
+    const p = planFromDay(upper(meso, 0))
+    p.exercises[0]!.name = 'DB Lateral Raise'
+    p.exercises[0]!.startFresh = true
+    const ex = upper(applyDayPlan(meso, meso.weeks[0]!.id, upper(meso, 0).id, p, 'this'), 0).exercises[0]!
+    expect(ex.name).toBe('DB Lateral Raise')
+    expect(ex.sets.every((s) => s.status === 'pending' && s.weight === null && s.reps === null)).toBe(true)
+    expect(loggedSetsLost(meso, meso.weeks[0]!.id, upper(meso, 0).id, p, 'this')).toBe(1)
+  })
+
+  it('flags only renames of exercises that have logged sets', () => {
+    const meso = logFirstBenchSet(createMeso(plan))
+    const day = upper(meso, 0)
+    const p = planFromDay(day)
+    expect(renamesNeedingAnswer(day, p)).toEqual([])
+    p.exercises[0]!.name = '  incline db bench '
+    expect(renamesNeedingAnswer(day, p)).toEqual([])
+    p.exercises[0]!.name = 'Machine Chest Press'
+    p.exercises[1]!.name = 'Chest Supported Row'
+    expect(renamesNeedingAnswer(day, p)).toEqual([{ id: day.exercises[0]!.id, from: 'Incline DB Bench', to: 'Machine Chest Press', loggedSets: 1 }])
   })
 
   it('a swapped-in exercise starts fresh; the old one keeps its history in earlier weeks', () => {
