@@ -74,6 +74,11 @@ export interface ExercisePlan {
   id?: string
   name: string
   sets: SetPlan[]
+  /**
+   * Only meaningful with `id`. Set when this is a different exercise that happens to take over
+   * the old one's slot: its logged results are cleared instead of carried across the rename.
+   */
+  startFresh?: boolean
 }
 
 export interface DayPlan {

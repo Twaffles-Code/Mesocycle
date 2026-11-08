@@ -21,14 +21,40 @@ function weeksInScope(draft: Meso, weekId: string, scope: EditScope): Week[] {
  * are dropped; extra sets start pending.
  */
 function mergeExercise(existing: DayExercise, plan: ExercisePlan): DayExercise {
+  // A different exercise in the same slot shouldn't inherit the old one's weights and reps.
+  const fresh = plan.startFresh === true
   return {
     ...existing,
     name: plan.name.trim(),
+    skipped: fresh ? false : existing.skipped,
     sets: plan.sets.map((setPlan, i) => {
       const old = existing.sets[i]
-      return old ? { ...old, ...setPlan } : setFromPlan(setPlan)
+      return old && !fresh ? { ...old, ...setPlan } : setFromPlan(setPlan)
     }),
   }
+}
+
+export interface Rename {
+  id: string
+  from: string
+  to: string
+  /** Logged sets that would be carried over to the new name. */
+  loggedSets: number
+}
+
+/**
+ * Exercises in `day` that `plan` renames to a different name and that already have
+ * logged sets, so the caller can ask whether it's the same exercise or a different one.
+ */
+export function renamesNeedingAnswer(day: Day, plan: DayPlan): Rename[] {
+  const renames: Rename[] = []
+  for (const exPlan of plan.exercises) {
+    const existing = exPlan.id === undefined ? undefined : day.exercises.find((e) => e.id === exPlan.id)
+    if (!existing || exerciseKey(existing.name) === exerciseKey(exPlan.name)) continue
+    const loggedSets = existing.sets.filter((s) => s.status === 'done').length
+    if (loggedSets > 0) renames.push({ id: existing.id, from: existing.name, to: exPlan.name.trim(), loggedSets })
+  }
+  return renames
 }
 
 /**
