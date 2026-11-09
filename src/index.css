@@ -977,16 +977,16 @@ button:disabled {
 
 .rir-chips {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
 .rir-chips button {
-  min-height: 48px;
+  min-height: 52px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 700;
 }
 
