@@ -127,6 +127,8 @@ export function DataScreen() {
           }}
         />
       </section>
+
+      <p className="muted small">Build {__BUILD_HASH__} · {__BUILD_DATE__}</p>
     </Screen>
   )
 }
