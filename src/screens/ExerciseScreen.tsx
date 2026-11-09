@@ -192,6 +192,9 @@ function SetForm(props: {
             +
           </button>
         </div>
+        <button className="btn btn-block" onClick={() => props.onLog({ weight, reps: null, rir })}>
+          Didn't count reps
+        </button>
       </div>
 
       <div className="big-field">
