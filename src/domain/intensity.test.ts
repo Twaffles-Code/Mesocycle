@@ -14,7 +14,7 @@ describe('intensity', () => {
   it('shows an emoji for logged values and nothing when unset', () => {
     expect(intensityEmoji(0)).toBe('😤')
     expect(intensityEmoji(1)).toBe('🙂')
-    expect(intensityEmoji(4)).toBe('🤔')
+    expect(intensityEmoji(4)).toBe('😕')
     expect(intensityEmoji(null)).toBe('')
   })
 })

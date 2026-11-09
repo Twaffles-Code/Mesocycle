@@ -6,7 +6,7 @@ export type Intensity = 'easy' | 'target' | 'hard'
 
 /** Left to right as shown in the picker. `rir` is the value stored when picked. */
 export const INTENSITY_LEVELS: readonly { level: Intensity; rir: number; emoji: string; label: string }[] = [
-  { level: 'easy', rir: 3, emoji: '🤔', label: 'Easy, plenty left' },
+  { level: 'easy', rir: 3, emoji: '😕', label: 'Easy, plenty left' },
   { level: 'target', rir: 2, emoji: '🙂', label: 'On target' },
   { level: 'hard', rir: 0, emoji: '😤', label: 'Hit the limit' },
 ]
