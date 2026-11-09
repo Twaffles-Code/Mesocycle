@@ -1,3 +1,4 @@
+import { intensityEmoji } from '../domain/intensity'
 import type { SetPlan, Units, WorkoutSet } from '../domain/types'
 
 /** 75 → "75", 77.5 → "77.5", null → "–" */
@@ -25,10 +26,10 @@ export function exerciseTarget(sets: SetPlan[], units: Units): string {
   return `${sets.length} sets · ${sets.map((s) => s.targetReps).join(' / ')}`
 }
 
-/** "75 × 11 @ 2" */
+/** "75 lb × 11 🙂" */
 export function performed(s: Pick<WorkoutSet, 'weight' | 'reps' | 'rir'>, units: Units): string {
   const load = s.weight === null ? 'BW' : `${num(s.weight)} ${units}`
-  return `${load} × ${num(s.reps)}${s.rir === null ? '' : ` @ RIR ${s.rir}`}`
+  return `${load} × ${num(s.reps)}${s.rir === null ? '' : ` ${intensityEmoji(s.rir)}`}`
 }
 
 /** Turns text from a number box into a number. Accepts "77,5" because some iPhone keypads type commas. */

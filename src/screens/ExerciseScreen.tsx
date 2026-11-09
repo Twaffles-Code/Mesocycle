@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logSet, nextExercise, nextPendingSetIndex, previousPerformance, resetSet, setExerciseSkipped, skipSet, suggestedEntry, type SetRef } from '../domain/logging'
+import { INTENSITY_LEVELS, intensityOf } from '../domain/intensity'
 import { exerciseProgress, weekLabel } from '../domain/meso'
 import type { Day, DayExercise, Meso, Units, Week } from '../domain/types'
 import { Badge, NotFound, NumberInput, Screen } from '../ui/components'
@@ -131,8 +132,6 @@ function ExerciseSwitcher({ day, currentId, onPick }: { day: Day; currentId: str
   )
 }
 
-const RIR_CHOICES = [0, 1, 2, 3, 4, 5]
-
 function SetForm(props: {
   meso: Meso
   setRef: SetRef
@@ -149,6 +148,7 @@ function SetForm(props: {
   const [weight, setWeight] = useState(initial.weight)
   const [reps, setReps] = useState(initial.reps)
   const [rir, setRir] = useState(initial.rir)
+  const intensity = intensityOf(rir)
   const step = props.units === 'lb' ? 5 : 2.5
   const bump = (value: number | null, by: number, min = 0) => Math.max(min, Number(((value ?? 0) + by).toFixed(2)))
 
@@ -195,11 +195,19 @@ function SetForm(props: {
       </div>
 
       <div className="big-field">
-        <span>RIR {set.targetRir && <span className="muted">(target {set.targetRir})</span>}</span>
-        <div className="rir-chips" role="radiogroup" aria-label="Reps in reserve">
-          {RIR_CHOICES.map((n) => (
-            <button key={n} role="radio" aria-checked={rir === n} className={rir === n ? 'active' : ''} onClick={() => setRir(rir === n ? null : n)}>
-              {n === 5 ? '5+' : n}
+        <span>Intensity</span>
+        <div className="rir-chips" role="radiogroup" aria-label="Intensity">
+          {INTENSITY_LEVELS.map((l) => (
+            <button
+              key={l.level}
+              role="radio"
+              aria-label={l.label}
+              title={l.label}
+              aria-checked={intensity === l.level}
+              className={intensity === l.level ? 'active' : ''}
+              onClick={() => setRir(intensity === l.level ? null : l.rir)}
+            >
+              {l.emoji}
             </button>
           ))}
         </div>
