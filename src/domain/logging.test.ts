@@ -13,7 +13,9 @@ import {
   suggestedEntry,
   type SetRef,
 } from './logging'
+import { makeBackup, parseBackup } from './backup'
 import { plan } from './testFixtures'
+import { performed } from '../ui/format'
 import type { Meso } from './types'
 
 /** Ref to set `s` of exercise `e` on day `d` of week `w`. */
@@ -32,6 +34,32 @@ describe('logging sets', () => {
     const after = logSet(meso, ref(meso, 0, 0, 0, 0), { weight: 75, reps: 11, rir: 2 })
     expect(benchSet(after, 0, 0)).toMatchObject({ weight: 75, reps: 11, rir: 2, status: 'done' })
     expect(benchSet(meso, 0, 0).status).toBe('pending') // original untouched
+  })
+
+  it('logs a set as done with unknown reps, keeping the weight', () => {
+    const meso = createMeso(plan)
+    const after = logSet(meso, ref(meso, 0, 0, 0, 0), { weight: 80, reps: null, rir: null })
+    expect(benchSet(after, 0, 0)).toMatchObject({ weight: 80, reps: null, status: 'done' })
+    expect(exerciseProgress(after.weeks[0]!.days[0]!.exercises[0]!)).not.toBe('pending')
+    // switching between counted and uncounted
+    const counted = logSet(after, ref(after, 0, 0, 0, 0), { weight: 80, reps: 9, rir: null })
+    expect(benchSet(counted, 0, 0).reps).toBe(9)
+    expect(benchSet(logSet(counted, ref(counted, 0, 0, 0, 0), { weight: 80, reps: null, rir: null }), 0, 0).reps).toBeNull()
+  })
+
+  it('previous week with unknown reps still carries the weight forward', () => {
+    let meso = createMeso(plan)
+    meso = logSet(meso, ref(meso, 0, 0, 0, 0), { weight: 80, reps: null, rir: null })
+    const r = ref(meso, 1, 0, 0, 0)
+    expect(previousPerformance(meso, r)).toMatchObject({ weight: 80, reps: null })
+    expect(suggestedEntry(meso, r).weight).toBe(80)
+    expect(performed({ weight: 80, reps: null, rir: null }, 'lb')).toBe('80 lb × –')
+  })
+
+  it('round-trips a done set with unknown reps through a backup', () => {
+    const base = createMeso(plan)
+    const meso = logSet(base, ref(base, 0, 0, 0, 0), { weight: 80, reps: null, rir: null })
+    expect(parseBackup(JSON.stringify(makeBackup([meso])))).toEqual({ ok: true, value: [meso] })
   })
 
   it('skips and resets a set', () => {
